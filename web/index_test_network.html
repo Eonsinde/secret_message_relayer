@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Epic | Reading data from local blockchain</title>
+    <title>Epic | Reading data from local blockchain | testnet</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Balsamiq+Sans:wght@400;700&family=Rubik+Vinyl&display=swap" rel="stylesheet">
@@ -93,12 +93,13 @@
 
                 if (exists) {
                     web3 = window.web3;
+                    console.log("Given Provider", web3.givenProvider, "\n\n");
                 } else {
                     web3 = new Web3("http://127.0.0.1:7545");
                 }
 
-                  // set default account
-                web3.eth.defaultAccount = "0x567E2d82718C657BCfb83346Ce2999B334bb4F18";
+                // set default account
+                web3.eth.defaultAccount = "0x3440492898A1093c021493a7592381d553bd92aF";
 
                 // get contract address
                 const remixContract = new web3.eth.Contract([
@@ -128,19 +129,19 @@
                         "stateMutability": "view",
                         "type": "function"
                     }
-                ], "0xf5b5B3E8679a08a747887FF54440506bE2C643e1");
+                ], "0x4392F58Ed5C342465d145FfE45EB05124fBe4B57");
 
                 // get contract abi 
-                console.log("Contract:", remixContract);
-                console.log("Default Account on Contract:", remixContract.defaultAccount);
+                // console.log("Contract:", remixContract);
+                // console.log("Default Account on Contract:", remixContract.defaultAccount);
 
                 // use method on smart contract instance
                 remixContract.methods.setMessage($("#msg-box").val()).send({ from: remixContract.defaultAccount, gasPrice: 2000000 })
                     .on('transactionHash', function(hash){
-                        console.log(hash)
+                        console.log("Hash:", hash);
                     })
                     .on('receipt', function(receipt){
-                        console.log(receipt)
+                        console.log("Receipt:", receipt);
                     })
                     .on('confirmation', function(confirmationNumber, receipt){
                         console.log("Successfully confirmed and added to chain");
@@ -149,7 +150,7 @@
                         console.error("Failed to submit message to blockchain", error);
                     });
 
-                console.log($("#msg-box").val());
+                console.log("Message sent:", $("#msg-box").val());
             }
 
             // run main program
