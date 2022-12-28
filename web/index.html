@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic | Reading data from local blockchain</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Balsamiq+Sans:wght@400;700&family=Rubik+Vinyl&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.1/css/fontawesome.min.css" integrity="sha384-QYIZto+st3yW+o8+5OHfT6S482Zsvz2WfOzpFSXMF9zqeLcFV0/wlZpMtyFcZALm" crossorigin="anonymous">
+    <script src="https://kit.fontawesome.com/94513992de.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <script
+        src="https://code.jquery.com/jquery-3.6.3.min.js"
+        integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+        crossorigin="anonymous"
+    >
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        clifford: '#da373d',
+                    }
+                },
+                fontFamily: {
+                    'balsamiq': ['Balsamiq Sans', 'cursive'],
+                    'rubikVinyl': ['Rubik Vinyl', 'cursive'],
+                }
+            }
+        }
+    </script>
+    <style>
+        body{
+            font-family: 'Balsamiq Sans', cursive;
+        }
+    </style>
+</head>
+<body class="overflow-hidden">
+    <div class="bg-slate-900 h-screen w-screen py-20 px-10 md:px-0">
+        <header class="text-center">
+            <h1 class="font-rubikVinyl text-white text-[48px] text-center tracking-wider"><i class="fa-solid fa-record-vinyl"></i> Secret Message Relayer</h1>
+            <p class="text-[#ccc] mt-4 text-xl">This site writes secret messages to the Ethereum Blockchain</p>
+        </header>
+        <div class="mt-10">
+            <form id="msg-form" class="w-[80%] md:w-[50%] lg:w-[30%] mx-auto">
+                <div class="bg-slate-800 text-white flex items-center space-x-7 py-3 px-6 rounded-full">
+                    <label class="block"><i class="fa-solid fa-file-contract fa-2x"></i></label>
+                    <input type="text" id="msg-box" class="py-2 bg-transparent outline-none text-white text-xl" placeholder="Enter a message . . ." />
+                    <button id="submit-btn" class="bg-slate-900 p-4 text-white rounded-full">Set Secret Message</button>
+                </div>
+            </form>
+            <div class="text-white text-center mt-6"><p>Connect to MetaMask to begin transacting</p> <a href="#" id="connectMMBtn" class="underline">connect now</a></div>
+        </div>
+    </div>
+    
+    <script>
+        // create web3 instance
+        let web3 = null;
+
+        // checks to see if MetaMask is installed
+        const ethEnabled = async () => {
+            if (window.ethereum) {
+                await window.ethereum.request({method: 'eth_requestAccounts'});
+                window.web3 = new Web3(window.ethereum);
+                return true;
+            }
+            return false;
+        }
+
+        // if (window.ethereum) { // connect to metamask
+        //     window.web3 = new Web3(window.ethereum);
+        //     await window.ethereum.enable();
+        // } else { // ignore metamask usage
+        //     const web3 = new Web3("http://127.0.0.1:7545");
+        // }
+
+        $("#msg-form").submit(e => {
+            e.preventDefault();
+        });
+
+        $("#connectMMBtn").submit(e => {
+           console.log("Hello world!");
+        });
+
+        $('#submit-btn').click(() => {
+            // if MetaMask is installed, connect to it
+            // else, just connect to local ganache server
+            const mainProgram = async () => { 
+                const exists = await ethEnabled();
+
+                if (exists) {
+                    web3 = window.web3;
+                } else {
+                    web3 = new Web3("http://127.0.0.1:7545");
+                }
+
+                  // set default account
+                web3.eth.defaultAccount = "0x567E2d82718C657BCfb83346Ce2999B334bb4F18";
+
+                // get contract address
+                const remixContract = new web3.eth.Contract([
+                    {
+                        "inputs": [
+                            {
+                                "internalType": "string",
+                                "name": "value",
+                                "type": "string"
+                            }
+                        ],
+                        "name": "setMessage",
+                        "outputs": [],
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [],
+                        "name": "getMessage",
+                        "outputs": [
+                            {
+                                "internalType": "string",
+                                "name": "",
+                                "type": "string"
+                            }
+                        ],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }
+                ], "0xf5b5B3E8679a08a747887FF54440506bE2C643e1");
+
+                // get contract abi 
+                console.log("Contract:", remixContract);
+                console.log("Default Account on Contract:", remixContract.defaultAccount);
+
+                // use method on smart contract instance
+                remixContract.methods.setMessage($("#msg-box").val()).send({ from: remixContract.defaultAccount, gasPrice: 2000000 })
+                    .on('transactionHash', function(hash){
+                        console.log(hash)
+                    })
+                    .on('receipt', function(receipt){
+                        console.log(receipt)
+                    })
+                    .on('confirmation', function(confirmationNumber, receipt){
+                        console.log("Successfully confirmed and added to chain");
+                    })
+                    .on('error', function(error, receipt) {
+                        console.error("Failed to submit message to blockchain", error);
+                    });
+
+                console.log($("#msg-box").val());
+            }
+
+            mainProgram();
+        });
+    </script>
+</body>
+</html>
